@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 option(RC_ENABLE_TESTS "Build RapidCheck tests" OFF)
 option(RC_ENABLE_EXAMPLES "Build RapidCheck examples" OFF)
+option(RC_ENABLE_RTTI "Build RapidCheck with RTTI" ON)
 
 if(MSVC)
   # /bigobj - some object files become very large so we need this
@@ -20,9 +21,12 @@ if(MSVC)
   string(REGEX REPLACE "/RTC(su|[1su])" ""
     CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces -Wno-unused-command-line-argument")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-missing-braces -Wno-unused-command-line-argument")
   if(APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang)")
+      # Workaround for legacy Apple environment (cf. https://stackoverflow.com/a/19774902/1682144)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    endif()
   endif()
 endif()
 
@@ -96,6 +100,10 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 # See: https://stackoverflow.com/questions/18880654/why-do-i-get-the-same-sequence-for-every-run-with-stdrandom-device-with-mingw
 if(MINGW)
   target_compile_definitions(rapidcheck PRIVATE RC_SEED_SYSTEM_TIME)
+endif()
+
+if(RC_ENABLE_RTTI)
+  add_definitions(-DRC_USE_RTTI)
 endif()
 
 add_subdirectory(ext)
